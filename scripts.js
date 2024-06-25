@@ -1,9 +1,13 @@
 const canvas = document.getElementById("pongCanvas");
 const ctx = canvas.getContext("2d");
 
-let paddleHeight = 100;
-let paddleWidth = 10;
-let paddleY = (canvas.height - paddleHeight) / 2;
+const paddleHeight = 100;
+const paddleWidth = 10;
+const playerPaddleX = 0;
+let playerPaddleY = (canvas.height - paddleHeight) / 2;
+const computerPaddleX = canvas.width - paddleWidth;
+let computerPaddleY = (canvas.height - paddleHeight) / 2;
+
 let upPressed = false;
 let downPressed = false;
 
@@ -15,11 +19,14 @@ let dy = -2;
 let speedMultiplier = 1.05;
 let colorIndex = 0;
 
+let playerLives = 3;
+let computerLives = 3;
+
 const colors = ["#FF0000", "#00FF00", "#0000FF", "#FFFF00", "#FF00FF", "#00FFFF"];
 
-function drawPaddle() {
+function drawPaddle(x, y) {
     ctx.beginPath();
-    ctx.rect(canvas.width - paddleWidth, paddleY, paddleWidth, paddleHeight);
+    ctx.rect(x, y, paddleWidth, paddleHeight);
     ctx.fillStyle = colors[colorIndex % colors.length];
     ctx.fill();
     ctx.closePath();
@@ -36,30 +43,68 @@ function drawBall() {
 function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    drawPaddle();
+    drawPaddle(playerPaddleX, playerPaddleY);
+    drawPaddle(computerPaddleX, computerPaddleY);
     drawBall();
 
-    if (upPressed && paddleY > 0) {
-        paddleY -= 7;
-    } else if (downPressed && paddleY < canvas.height - paddleHeight) {
-        paddleY += 7;
-    }
-
-    if (x + dx > canvas.width - ballRadius - paddleWidth && y > paddleY && y < paddleY + paddleHeight) {
-        dx = -dx * speedMultiplier;
-        dy *= speedMultiplier;
-        colorIndex++;
-        document.body.style.backgroundColor = colors[colorIndex % colors.length];
-    } else if (x + dx < ballRadius || x + dx > canvas.width - ballRadius) {
-        dx = -dx;
+    if (upPressed && playerPaddleY > 0) {
+        playerPaddleY -= 7;
+    } else if (downPressed && playerPaddleY < canvas.height - paddleHeight) {
+        playerPaddleY += 7;
     }
 
     if (y + dy < ballRadius || y + dy > canvas.height - ballRadius) {
         dy = -dy;
     }
 
+    if (x + dx < ballRadius + paddleWidth) {
+        if (y > playerPaddleY && y < playerPaddleY + paddleHeight) {
+            dx = -dx * speedMultiplier;
+            dy *= speedMultiplier;
+            colorIndex++;
+        } else {
+            computerLives--;
+            resetBall();
+        }
+    } else if (x + dx > canvas.width - ballRadius - paddleWidth) {
+        if (y > computerPaddleY && y < computerPaddleY + paddleHeight) {
+            dx = -dx * speedMultiplier;
+            dy *= speedMultiplier;
+            colorIndex++;
+        } else {
+            playerLives--;
+            resetBall();
+        }
+    }
+
     x += dx;
     y += dy;
+
+    moveComputerPaddle();
+
+    if (playerLives === 0 || computerLives === 0) {
+        endGame();
+    }
+}
+
+function moveComputerPaddle() {
+    if (computerPaddleY + paddleHeight / 2 < y) {
+        computerPaddleY += 4;
+    } else if (computerPaddleY + paddleHeight / 2 > y) {
+        computerPaddleY -= 4;
+    }
+}
+
+function resetBall() {
+    x = canvas.width / 2;
+    y = canvas.height / 2;
+    dx = -dx;
+    dy = -dy;
+}
+
+function endGame() {
+    alert(`Game Over! ${playerLives === 0 ? "Computer" : "Player"} wins!`);
+    document.location.reload();
 }
 
 document.addEventListener("keydown", keyDownHandler, false);
